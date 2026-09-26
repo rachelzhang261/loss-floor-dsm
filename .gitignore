@@ -1,0 +1,8 @@
+__pycache__/
+*.pyc
+*.pyo
+.DS_Store
+runs/
+analytic_checks/fig_lossfloor_identity.pdf
+cifar_floor/fig_cifar_floor.pdf
+.git_broken/

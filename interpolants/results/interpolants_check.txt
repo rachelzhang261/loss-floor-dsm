@@ -1,0 +1,138 @@
+==============================================================================
+Appendix I: the loss floor for flow matching and stochastic interpolants
+==============================================================================
+
+------------------------------------------------------------------------------
+d = 1, trigonometric variance-preserving interpolant
+------------------------------------------------------------------------------
+
+[C1] Cov[T | x_t] / Cov[y | x_t] = c_t^2   (VP trig, d=1)
+     t target        c_t^2   measured ratio    rel.err
+  0.15    eps     17.34972         17.34972   0.00e+00
+  0.15     x0      1.00000          1.00000   0.00e+00
+  0.15      v     18.34972         18.34972   3.87e-16
+  0.15   flow     45.27612         45.27612   1.57e-16
+  0.35    eps      2.66294          2.66294   1.67e-16
+  0.35     x0      1.00000          1.00000   0.00e+00
+  0.35      v      3.66294          3.66294   0.00e+00
+  0.35   flow      9.03794          9.03794   3.93e-16
+  0.55    eps      0.72945          0.72945   1.52e-16
+  0.55     x0      1.00000          1.00000   0.00e+00
+  0.55      v      1.72945          1.72945   0.00e+00
+  0.55   flow      4.26726          4.26726   0.00e+00
+  0.80    eps      0.10557          0.10557   2.63e-16
+  0.80     x0      1.00000          1.00000   0.00e+00
+  0.80      v      1.10557          1.10557   4.02e-16
+  0.80   flow      2.72789          2.72789   1.63e-16
+  worst relative error: 4.02e-16   -> PASS
+
+[C2] closed-form posterior vs. unweighted bin conditioning (d=1)
+     t       x0  point est.  law of tot.var   binned MC  n in bin   rel.err   MC s.e.
+  0.25   -0.439    0.205921        0.206396    0.210680     26529  2.08e-02     1.43 s.e.
+  0.25    0.461    0.070667        0.070712    0.070626     88535  1.22e-03     0.15 s.e.
+  0.50   -0.406    1.333839        1.333952    1.336447     74650  1.87e-03     0.80 s.e.
+  0.50    0.494    0.423021        0.423147    0.424001    113798  2.02e-03     0.25 s.e.
+  0.75   -0.357    1.606398        1.606392    1.603461    109294  1.82e-03     0.89 s.e.
+  0.75    0.543    1.101794        1.101871    1.099923    112779  1.77e-03     0.40 s.e.
+  largest deviation: 1.43 standard errors   -> PASS
+
+[C3] L(theta) = L_ideal(theta) + floor   (VP trig, d=1, n=2,000,000)
+target        predictor           L     L_ideal   L-L_ideal       floor   rel.err  paired z
+   eps     exact E[T|x]     0.25795     0.00000     0.25795     0.25794  6.90e-05     0.04 s.e.
+   eps       0.8 E[T|x]     0.26766     0.00969     0.25796     0.25794  1.12e-04     0.08 s.e.
+   eps       E[T|x]+0.3     0.30314     0.04500     0.25814     0.25794  7.91e-04     0.50 s.e.
+    x0     exact E[T|x]     0.13616     0.00000     0.13616     0.13615  6.90e-05     0.04 s.e.
+    x0       0.8 E[T|x]     0.16275     0.02659     0.13616     0.13615  1.34e-05     0.01 s.e.
+    x0       E[T|x]+0.3     0.18103     0.04500     0.13603     0.13615  9.24e-04     0.50 s.e.
+     v     exact E[T|x]     0.39412     0.00000     0.39412     0.39409  6.90e-05     0.04 s.e.
+     v       0.8 E[T|x]     0.40253     0.00841     0.39412     0.39409  7.76e-05     0.06 s.e.
+     v       E[T|x]+0.3     0.43935     0.04500     0.39435     0.39409  6.53e-04     0.42 s.e.
+  flow     exact E[T|x]     0.97245     0.00000     0.97245     0.97238  6.90e-05     0.04 s.e.
+  flow       0.8 E[T|x]     0.99319     0.02074     0.97245     0.97238  7.76e-05     0.06 s.e.
+  flow       E[T|x]+0.3     1.01781     0.04500     0.97281     0.97238  4.41e-04     0.29 s.e.
+  largest deviation: 0.50 standard errors   -> PASS
+
+[C4/C6] omega-reweighting and Jacobian estimator   (VP trig, d=1)
+  C6  max |[d - sigma E tr d_x eps*] - M| / M = 2.68e-15   -> PASS
+target     floor (dt)   floor (omega M dl)    rel.err   omega range
+   eps       1.974116             1.974116   0.00e+00   identically 1
+    x0       3.157575             3.157575   0.00e+00   [0.00894, 112]
+     v       5.131692             5.131692   1.73e-16   [1.01, 113]
+  flow      12.661942            12.661942   1.40e-16   [2.49, 279]
+  worst relative error: 1.73e-16   -> PASS
+
+[C5/C7] the c_t table, and the flow-matching / v-prediction ratio
+  trigonometric VP (alpha^2+sigma^2=1):
+    t=0.20  c_fm=  -5.0832  sigma*rdot=  -5.0832  c_v=  -3.2361  c_fm/c_v= 1.57080  1/(a^2+s^2)= 1.00000  [max err 2.4e-11]
+    t=0.40  c_fm=  -2.6724  sigma*rdot=  -2.6724  c_v=  -1.7013  c_fm/c_v= 1.57080  1/(a^2+s^2)= 1.00000  [max err 2.8e-11]
+    t=0.60  c_fm=  -1.9416  sigma*rdot=  -1.9416  c_v=  -1.2361  c_fm/c_v= 1.57080  1/(a^2+s^2)= 1.00000  [max err 5.9e-11]
+    t=0.80  c_fm=  -1.6516  sigma*rdot=  -1.6516  c_v=  -1.0515  c_fm/c_v= 1.57080  1/(a^2+s^2)= 1.00000  [max err 5.8e-11]
+  linear (alpha=1-t, sigma=t):
+    t=0.20  c_fm=  -5.0000  sigma*rdot=  -5.0000  c_v=  -3.4000  c_fm/c_v= 1.47059  1/(a^2+s^2)= 1.47059  [max err 2.4e-11]
+    t=0.40  c_fm=  -2.5000  sigma*rdot=  -2.5000  c_v=  -1.3000  c_fm/c_v= 1.92308  1/(a^2+s^2)= 1.92308  [max err 2.3e-12]
+    t=0.60  c_fm=  -1.6667  sigma*rdot=  -1.6667  c_v=  -0.8667  c_fm/c_v= 1.92308  1/(a^2+s^2)= 1.92308  [max err 4.7e-11]
+    t=0.80  c_fm=  -1.2500  sigma*rdot=  -1.2500  c_v=  -0.8500  c_fm/c_v= 1.47059  1/(a^2+s^2)= 1.47059  [max err 3.3e-11]
+  -> table identities hold; c_fm/c_v = 1/(alpha^2+sigma^2) in every row, so the flow-matching
+     velocity is a v-parametrisation exactly on a VP interpolant, and differs
+     by the factor alpha^2+sigma^2 on the linear one.
+
+------------------------------------------------------------------------------
+[C8] d = 8, linear (flow-matching) interpolant
+------------------------------------------------------------------------------
+
+[C1] Cov[T | x_t] / Cov[y | x_t] = c_t^2   (linear, d=8)
+     t target        c_t^2   measured ratio    rel.err
+  0.15    eps     32.11111         32.11111   2.21e-16
+  0.15     x0      1.00000          1.00000   0.00e+00
+  0.15      v     24.66778         24.66778   2.88e-16
+  0.15   flow     44.44444         44.44444   1.60e-16
+  0.35    eps      3.44898          3.44898   3.86e-16
+  0.35     x0      1.00000          1.00000   0.00e+00
+  0.35      v      2.42469          2.42469   1.83e-16
+  0.35   flow      8.16327          8.16327   2.18e-16
+  0.55    eps      0.66942          0.66942   1.66e-16
+  0.55     x0      1.00000          1.00000   0.00e+00
+  0.55      v      0.84306          0.84306   0.00e+00
+  0.55   flow      3.30579          3.30579   1.34e-16
+  0.80    eps      0.06250          0.06250   3.33e-16
+  0.80     x0      1.00000          1.00000   0.00e+00
+  0.80      v      0.72250          0.72250   1.54e-16
+  0.80   flow      1.56250          1.56250   1.42e-16
+  worst relative error: 3.86e-16   -> PASS
+
+[C3] L(theta) = L_ideal(theta) + floor   (linear, d=8, n=2,000,000)
+target        predictor           L     L_ideal   L-L_ideal       floor   rel.err  paired z
+   eps     exact E[T|x]     1.30409     0.00000     1.30409     1.30362  3.63e-04     0.82 s.e.
+   eps       0.8 E[T|x]     1.41192     0.10785     1.30406     1.30362  3.42e-04     0.77 s.e.
+   eps       E[T|x]+0.3     1.66394     0.36000     1.30394     1.30362  2.45e-04     0.48 s.e.
+    x0     exact E[T|x]     0.57960     0.00000     0.57960     0.57939  3.63e-04     0.82 s.e.
+    x0       0.8 E[T|x]     0.78782     0.20832     0.57950     0.57939  1.90e-04     0.37 s.e.
+    x0       E[T|x]+0.3     0.93970     0.36000     0.57970     0.57939  5.41e-04     0.91 s.e.
+     v     exact E[T|x]     0.97952     0.00000     0.97952     0.97916  3.63e-04     0.82 s.e.
+     v       0.8 E[T|x]     1.03491     0.05546     0.97945     0.97916  2.95e-04     0.67 s.e.
+     v       E[T|x]+0.3     1.33938     0.36000     0.97938     0.97916  2.27e-04     0.42 s.e.
+  flow     exact E[T|x]     3.62248     0.00000     3.62248     3.62116  3.63e-04     0.82 s.e.
+  flow       0.8 E[T|x]     3.86876     0.24658     3.62218     3.62116  2.81e-04     0.64 s.e.
+  flow       E[T|x]+0.3     3.98222     0.36000     3.62222     3.62116  2.92e-04     0.62 s.e.
+  largest deviation: 0.91 standard errors   -> PASS
+
+[C4/C6] omega-reweighting and Jacobian estimator   (linear, d=8)
+  C6  max |[d - sigma E tr d_x eps*] - M| / M = 1.96e-14   -> PASS
+target     floor (dt)   floor (omega M dl)    rel.err   omega range
+   eps      16.583294            16.583294   0.00e+00   identically 1
+    x0      17.393546            17.393546   0.00e+00   [0.00407, 245]
+     v      24.092710            24.092710   0.00e+00   [0.686, 219]
+  flow      49.488608            49.488608   0.00e+00   [1.13, 278]
+  worst relative error: 0.00e+00   -> PASS
+
+==============================================================================
+  C1       PASS
+  C2       PASS
+  C3       PASS
+  C4/C6    PASS
+  C5/C7    PASS
+  C8a      PASS
+  C8b      PASS
+  C8c      PASS
+  overall: PASS
+==============================================================================

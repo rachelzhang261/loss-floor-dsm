@@ -1,0 +1,7 @@
+# analytic_checks/ and interpolants/
+numpy
+matplotlib
+
+# cifar_floor/ (training and evaluation only; results/ can be used without these)
+torch
+torchvision
