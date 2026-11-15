@@ -22,11 +22,8 @@ and one Hutchinson probe per sample:
 and v^T J is one reverse-mode VJP (or J v one forward-mode JVP).  Cost is one
 extra backward pass per evaluation sample.  No dataset scan, no posterior.
 
-Because the floor is model-independent (a conditional variance cannot involve
-the regressor), estimates from different
-trained models must agree.  That is a testable prediction and it is what
-removes the circularity of correcting a model's loss with a model-derived
-floor: we check agreement, then correct every model with the consensus curve.
+The floor itself is model-independent. Replacing the Bayes denoiser with a
+trained network introduces checkpoint-dependent bias of either sign.
 
 This file validates (**) exactly on a Gaussian-mixture data distribution where
 E[y|x] and Cov[y|x] are available in closed form, and checks that Hutchinson
@@ -142,9 +139,8 @@ def main():
             lambda z: gm.eps_star(z, lam), x, npb, rng)))
         print(f"   {npb:7d}   {est:19.6f}   {abs(est-exact)/abs(exact):8.2e}")
     print("""
-   Note the averaging over the evaluation batch already does most of the
-   variance reduction, so ONE probe per sample is enough in practice: the
-   quantity we need is E_x[tr J], not tr J pointwise.""")
+   Averaging across evaluation samples reduces trace variance. The required
+   number of probes depends on the precision needed for the integrated floor.""")
 
     print()
     print("=" * 78)

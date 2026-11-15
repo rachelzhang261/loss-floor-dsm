@@ -1,4 +1,4 @@
-"""Numerical verification of Appendix I (flow matching and stochastic interpolants).
+"""Numerical verification of Appendix F (flow matching and stochastic interpolants).
 
 Claims checked against a Gaussian-mixture data distribution, for which the
 denoising posterior p(y | x_t) is available in closed form:
@@ -18,9 +18,7 @@ denoising posterior p(y | x_t) is available in closed form:
                                                                    [tab:targets]
   C6  M(lambda) = d - sigma E[tr d eps*/dx], tying the appendix to the
       Jacobian estimator used in the main text.                    [eq:estimator]
-  C7  the flow-matching / v-prediction correspondence: c_fm / c_v =
-      1 / (alpha^2 + sigma^2), so the two coincide exactly on a
-      variance-preserving interpolant and not on the linear one.
+  C7  c_fm / c_v = W / (alpha^2 + sigma^2), with W the Wronskian.
   C8  everything above in d = 8, where the floor is a trace.
 
 Run:  python interpolants.py
@@ -306,20 +304,19 @@ def check_table():
             c_v = c_factor(a, s, ad, sd, 'v')[0]
             c_eps = c_factor(a, s, ad, sd, 'eps')[0]
             c_x0 = c_factor(a, s, ad, sd, 'x0')[0]
+            ratio = (a * sd - ad * s) / (a ** 2 + s ** 2)
             errs = (abs(c_fm - s * rdot) / abs(c_fm),          # c = sigma rdot
                     abs(c_eps + r) / abs(r),                   # c = -r
                     abs(c_x0 - 1.0),                           # c = 1
-                    abs(c_v + (a ** 2 + s ** 2) / s) / abs(c_v))
+                    abs(c_v + (a ** 2 + s ** 2) / s) / abs(c_v),
+                    abs(c_fm / c_v - ratio))
             ok &= max(errs) < 1e-6
             print(f'    t={t:4.2f}  c_fm={c_fm:9.4f}  sigma*rdot={s * rdot:9.4f}'
                   f'  c_v={c_v:9.4f}  c_fm/c_v={c_fm / c_v:8.5f}'
-                  f'  1/(a^2+s^2)={1 / (a ** 2 + s ** 2):8.5f}'
+                  f'  W/(a^2+s^2)={ratio:8.5f}'
                   f'  [max err {max(errs):.1e}]')
     print(f'  -> table identities {"hold" if ok else "FAIL"}; '
-          f'c_fm/c_v = 1/(alpha^2+sigma^2) in every row, so the flow-matching')
-    print('     velocity is a v-parametrisation exactly on a VP interpolant, '
-          'and differs')
-    print('     by the factor alpha^2+sigma^2 on the linear one.')
+          'c_fm/c_v = W/(alpha^2+sigma^2).')
     return ok
 
 
@@ -328,7 +325,7 @@ def check_table():
 
 def main():
     print('=' * 78)
-    print('Appendix I: the loss floor for flow matching and stochastic interpolants')
+    print('Appendix F: the loss floor for flow matching and stochastic interpolants')
     print('=' * 78)
 
     gm1 = GaussianMixture(pi=[0.35, 0.65], mu=[[-1.4], [1.1]], s=[0.45, 0.30])
@@ -358,7 +355,8 @@ def main():
         print(f'  {k:8s} {"PASS" if v else "FAIL"}')
     print('  overall:', 'PASS' if all(r.values()) else 'FAIL')
     print('=' * 78)
+    return 0 if all(r.values()) else 1
 
 
 if __name__ == '__main__':
-    main()
+    raise SystemExit(main())

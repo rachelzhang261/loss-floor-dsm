@@ -1,74 +1,91 @@
 # The Loss Floor of Denoising Score Matching: Fisher Geometry from Schrödinger Bridges
 
-Code accompanying the paper. Three self-contained parts, one per set of numerical
-claims made in the paper.
+Code and saved results accompanying the approved merged manuscript. The paper
+relates the denoising loss floor to conditional endpoint Fisher geometry and
+information flow, and audits learned floor estimates with independent reference
+predictors on CIFAR-10 and ImageNet-64.
 
-```
-requirements.txt          numpy, matplotlib (analytic_checks/, interpolants/)
-                           + torch, torchvision (cifar_floor/ training only)
+## Contents
 
-analytic_checks/          Appendix D — identity checks on toy/analytic models
-cifar_floor/              Sec. 5 + Appendix E — the CIFAR-10 measurement
-interpolants/             Appendix F — flow matching / stochastic interpolants
-```
+| Directory | Contents |
+|---|---|
+| `analytic_checks/` | Low-dimensional identity checks for Appendices B and D. |
+| `cifar_floor/` | CIFAR-10 training, learned-Jacobian diagnostics, discrete-reference comparisons, and the ImageNet-64 audit. |
+| `interpolants/` | Appendix F checks for affine target families and stochastic interpolants. |
+| `figures/` | Both final manuscript figures, plus the exact TeX and saved data for Figure 2. |
 
-## `analytic_checks/` — Appendix D
+## Installation
 
-Each script is self-contained, numpy-only, and runs in seconds.
+Use Python 3.10 or newer in a virtual environment. Choose the dependencies needed:
 
-| script | paper reference | what it checks |
-|---|---|---|
-| `general_gap.py` | App. D.1 | de Bruijn identity for a **nonlinear** corruption drift $f(x)=-ax^3$, solved by direct Fokker–Planck integration — nothing affine or Gaussian is assumed |
-| `loss_floor.py` | App. D.2 | the schedule lemma $\gamma(t)\,\alpha_t^2/\sigma_t^4 = d\lambda_t/dt$ for four interpolant families |
-| `make_figures.py` | App. D.3, Fig. 2 | the floor–entropy identity on a two-mode Gaussian mixture; regenerates `fig_lossfloor_identity.pdf` |
-| `calibrated_loss.py` | App. D.4 | the ranking-inversion example in closed form: two exact-score models scaled by $c=0.97,0.90$ on two SNR ranges |
-| `bregman.py` | App. D.5, §6.2 | the masked-diffusion floor as a Bregman-information identity; reproduces the data entropy under four masking schedules |
-| `pullback.py` | §3.1, App. B | the pullback construction of the latent Fisher metric (ambient second variation → immersion → pullback) on three reference kernels, including a nonlinear-drift case, checking Prop. 1 (endpoint split) holds without affine structure |
-
-```bash
-cd analytic_checks
-python general_gap.py
-python loss_floor.py
-python make_figures.py
-python calibrated_loss.py
-python bregman.py
-python pullback.py
+```sh
+python -m pip install -r requirements.txt
+# For CIFAR-10 training/evaluation:
+python -m pip install -r requirements-cifar.txt
+# For the ImageNet-64 audit and data acquisition:
+python -m pip install -r requirements-imagenet.txt
 ```
 
-## `cifar_floor/` — Sec. 5, Appendix E
+Choose a PyTorch build appropriate to the available hardware. NumPy 2 or later is required for
+[`numpy.trapezoid`](https://numpy.org/doc/stable/reference/generated/numpy.trapezoid.html).
 
-The CIFAR-10 measurement: floor share, model-independence, and the ranking
-inversion, on a 12M-parameter UNet. See `cifar_floor/README.md` for the full
-design, caveats, and commands to reproduce a run from scratch (needs a GPU,
-~1.5–4 h per configuration). `results/` contains the analysis output the
-paper's numbers are drawn from, so the tables and Fig. 1 can be reproduced
-without retraining:
+## Reproduce the reported image results without training
 
-```bash
+The numerical records for the revised Figure 1 and Table 1 are in
+`cifar_floor/results/`; see its README for the file-to-result mapping. To redraw
+Figure 1 from those records:
+
+```sh
 cd cifar_floor
-python make_figure.py    # reads results/analysis.json + results/analysis_corrected.json by default
+python make_audit_figure.py --results results --out ../figures/fig_cifar_rebuttal.pdf
 ```
 
-## `interpolants/` — Appendix F
+The ImageNet result is recorded in `results/imagenet_edm_primary.json` under
+`integrated_nats_per_dim`. The CIFAR paired risks are in
+`results/wide240k_paired_baselines.json` under `tail_integrals`.
+These saved measurements can be inspected without PyTorch, datasets, or weights.
 
-Verifies the floor identity for the whole family of affine-interpolant
-objectives ($\epsilon$-, $x_0$-, $v$-prediction, flow matching, stochastic
-interpolants): the conditional-covariance ratio, the decomposition
-$\mathcal L = \mathcal L_{\rm ideal} + \mathrm{floor}$, the $\omega$-reweighting,
-the Jacobian estimator, the table of $c_t$ coefficients, and the
-flow-matching/$v$-prediction correspondence $c^{\rm fm}_t/c^v_t = 1/(\alpha_t^2+\sigma_t^2)$.
+## Analytic checks and manuscript locations
 
-```bash
-cd interpolants
-python interpolants.py           # ~2 min, numpy only; see results/interpolants_check.txt for a saved run
+Run each command from the repository root:
+
+| Command | Manuscript location | Purpose |
+|---|---|---|
+| `python analytic_checks/pullback.py` | Section 3.1; Appendix B | Ambient variation, immersion, pullback, and radial identities in finite examples. |
+| `python analytic_checks/general_gap.py` | Appendix D.1 | Information-flow identity for a nonlinear corruption drift. |
+| `python analytic_checks/loss_floor.py` | Appendix D.2 | Schedule identity. |
+| `python cifar_floor/floor_jacobian.py` | Appendix D.3 | Bayes-Jacobian identity for a Gaussian mixture. |
+| `python analytic_checks/make_figures.py` | Appendix D.4 | Numerical floor/entropy curves. Its plotting labels predate the final notation; use `figures/` for the exact manuscript rendering. |
+| `python analytic_checks/calibrated_loss.py` | Appendix D.5 | Effect of changing the SNR interval on both loss components; not a model-ranking correction. |
+| `python analytic_checks/bregman.py` | Section 6.1; Appendix D.6 | Masked-diffusion entropy identity and endpoint quadrature behavior. |
+| `python interpolants/interpolants.py` | Appendix F | Target covariance, weighting, and flow/velocity coefficient identities. |
+
+Figure 2's final typography and notation can be rebuilt from the saved numerical
+data with pdfLaTeX and PGFPlots:
+
+```sh
+cd figures
+pdflatex -interaction=nonstopmode -halt-on-error fig_lossfloor_identity_merged_v1.tex
 ```
 
-## Notes
+## Interpretation and reproducibility
 
-- All analytic checks use exact Gaussian-mixture posteriors, so most identities
-  are verified to machine precision (`1e-11`–`1e-16`); the few that compare two
-  Monte Carlo estimators report a paired standard-error test instead of a fixed
-  tolerance, since a fixed tolerance would only measure sample size.
-- `cifar_floor/README.md` also documents why the exact empirical-posterior
-  floor fails at this dimension and is replaced by the Jacobian estimator used
-  here — worth reading before extending the experiment.
+The Jacobian expression is exact for the Bayes predictor. Substituting a learned
+network can bias it in either direction; agreement with its Stein form does not
+remove that bias. The current experiments establish paired improvements on the
+same denoising objective and an independent upper bound on the floor.
+
+The file schemas retain historical keys such as `floor`, `floor_frac`, `true`,
+and `pooled_floor`. Read `floor` as a learned plug-in estimate unless explicitly
+identified as analytic, and `true` as the common narrow-range DSM comparison;
+neither key asserts an oracle population value. Saved JSON files are unchanged.
+
+The training and evaluation scripts are unchanged from the working project.
+Datasets, trained checkpoints, and downloaded third-party code are excluded from
+this source release. See `cifar_floor/README.md` for acquisition and training
+commands, fixed data revision, and the external EDM commit. New training runs
+need not reproduce a saved checkpoint exactly.
+
+The code is packaged with anonymous project metadata. Third-party datasets,
+weights, and code remain subject to their upstream terms; this package does not
+add a new license or redistribute those assets.

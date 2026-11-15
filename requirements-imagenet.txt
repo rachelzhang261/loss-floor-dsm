@@ -1,0 +1,12 @@
+-r requirements-cifar.txt
+datasets
+huggingface_hub
+# Imports used by the external NVlabs EDM implementation.
+scipy
+click
+requests
+tqdm
+psutil
+imageio
+imageio-ffmpeg
+pyspng

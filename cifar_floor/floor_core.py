@@ -43,6 +43,8 @@ the correct reference floor for comparing their training losses.
 Run this file directly to validate against the analytic Gaussian case.
 """
 
+import math
+
 import numpy as np
 
 
@@ -52,8 +54,7 @@ import numpy as np
 def alpha_sigma(lam):
     """VP coefficients from log-SNR.  alpha^2 = sigmoid(lam)."""
     lam = np.asarray(lam, dtype=np.float64)
-    a2 = 1.0 / (1.0 + np.exp(-lam))
-    return np.sqrt(a2), np.sqrt(1.0 - a2)
+    return np.exp(-0.5 * np.logaddexp(0.0, -lam)), np.exp(-0.5 * np.logaddexp(0.0, lam))
 
 
 def snr(lam):
@@ -122,9 +123,42 @@ def floor_curve(Y, lams, n_samples=256, seed=0, Y_eval=None):
     return np.array(vals), np.array(errs)
 
 
-def integrate_floor(lams, vals):
-    """FLOOR = 1/2 * int integrand dlambda"""
-    return 0.5 * float(np.trapezoid(vals, lams))
+def log_snr_grid(lo, hi, n_grid, endpoints):
+    """Keep the requested uniform nodes and include every range endpoint."""
+    grid = np.linspace(lo, hi, n_grid)
+    edges = np.asarray(sorted(set(endpoints)))
+    near_edge = np.isclose(grid[:, None], edges, atol=1e-9, rtol=0).any(axis=1)
+    return np.sort(np.concatenate([grid[~near_edge], edges]))
+
+
+def integrate_floor(lams, vals, lo=None, hi=None):
+    """Half the trapezoidal integral, interpolating endpoints on legacy grids."""
+    lams, vals = np.asarray(lams), np.asarray(vals)
+    lo = lams[0] if lo is None else lo
+    hi = lams[-1] if hi is None else hi
+    if lo < lams[0] - 1e-9 or hi > lams[-1] + 1e-9 or lo >= hi:
+        raise ValueError("integration interval must be inside the grid")
+    interior = (lams > lo + 1e-9) & (lams < hi - 1e-9)
+    x = np.concatenate(([lo], lams[interior], [hi]))
+    y = np.concatenate(([np.interp(lo, lams, vals)], vals[interior],
+                        [np.interp(hi, lams, vals)]))
+    return 0.5 * float(np.trapezoid(y, x))
+
+
+def cifar_rounding_risk_bound(lams, dimension=3072):
+    """Upper bound on epsilon MSE for rounding x/alpha to the 8-bit lattice.
+
+    The clean pixel spacing in [-1, 1] is 2/255. In lattice units the
+    corruption is r*Z for Z standard normal. After rounding and clipping,
+    the squared index error is bounded by min(abs(round(r*Z)), 255)**2.
+    """
+    values = []
+    for lam in lams:
+        r = 127.5 * math.exp(-0.5 * float(lam))
+        risk = sum((2 * k - 1) * math.erfc((k - 0.5) / (math.sqrt(2) * r))
+                   for k in range(1, 256))
+        values.append(dimension * risk / r**2)
+    return np.asarray(values)
 
 
 # ---------------------------------------------------------------------------

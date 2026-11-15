@@ -1,0 +1,40 @@
+{
+  "source": "wide_extended_grid219.json",
+  "units": "nats/image",
+  "wide_log_snr_range": [
+    -8.0,
+    13.8
+  ],
+  "grid_points": 219,
+  "pooled_floor": 8472.66456599426,
+  "floor_monte_carlo_se_scope": "Propagates per-node sampling errors with trapezoid weights assuming independent sampling across grid nodes. Excludes denoiser bias, quadrature error, and DSM loss uncertainty.",
+  "checkpoints": [
+    {
+      "checkpoint": "wide@60000",
+      "wide_dsm": 8591.15946875,
+      "common_narrow_dsm": 1295.0482109375,
+      "checkpoint_jacobian_floor": 8516.386597427369,
+      "floor_monte_carlo_se": 7.608737379905855,
+      "dsm_minus_checkpoint_floor": 74.77287132263154,
+      "dsm_minus_pooled_floor": 118.49490275573953
+    },
+    {
+      "checkpoint": "wide@120000",
+      "wide_dsm": 8501.82115625,
+      "common_narrow_dsm": 1286.50706640625,
+      "checkpoint_jacobian_floor": 8464.364823898317,
+      "floor_monte_carlo_se": 7.666500582746042,
+      "dsm_minus_checkpoint_floor": 37.45633235168316,
+      "dsm_minus_pooled_floor": 29.156590255739502
+    },
+    {
+      "checkpoint": "wide@240000",
+      "wide_dsm": 8435.44678125,
+      "common_narrow_dsm": 1277.0433125,
+      "checkpoint_jacobian_floor": 8437.242276657104,
+      "floor_monte_carlo_se": 7.752164448444743,
+      "dsm_minus_checkpoint_floor": -1.7954954071028624,
+      "dsm_minus_pooled_floor": -37.217784744259916
+    }
+  ]
+}

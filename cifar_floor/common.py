@@ -20,7 +20,6 @@ NOT per dimension, so that FLOOR is directly comparable with Delta I.
 """
 
 import math
-import os
 
 import torch
 import torch.nn as nn
@@ -32,8 +31,7 @@ import torch.nn.functional as F
 # ---------------------------------------------------------------------------
 def alpha_sigma(lam):
     """lam: tensor of log-SNR. returns (alpha, sigma) with alpha^2=sigmoid(lam)"""
-    a2 = torch.sigmoid(lam)
-    return a2.sqrt(), (1.0 - a2).sqrt()
+    return torch.sigmoid(lam).sqrt(), torch.sigmoid(-lam).sqrt()
 
 
 # Reference configurations.  These are the log-SNR ranges over which training
@@ -52,9 +50,7 @@ COMMON = "narrow"          # the yardstick every model is also evaluated on
 # data
 # ---------------------------------------------------------------------------
 def cifar_tensors(root, train=True):
-    """CIFAR-10 as a float tensor in [-1,1], shape (N,3,32,32). No augmentation:
-    the floor is a property of the data distribution, so the distribution the
-    models see must be fixed and identical across runs."""
+    """CIFAR-10 as a float tensor in [-1,1], shape (N,3,32,32)."""
     from torchvision.datasets import CIFAR10
     ds = CIFAR10(root=root, train=train, download=True)
     x = torch.from_numpy(ds.data).permute(0, 3, 1, 2).float().div_(127.5).sub_(1.0)
@@ -133,8 +129,7 @@ class Attn(nn.Module):
 
 
 class UNet(nn.Module):
-    """~12M params at ch=64. Deliberately small: the claim is about the loss
-    decomposition, not about sample quality."""
+    """Small DDPM-style UNet with about 6.18M parameters at ch=64."""
 
     def __init__(self, ch=64, ch_mult=(1, 2, 2), nres=2, attn_res=(16,),
                  dropout=0.1):

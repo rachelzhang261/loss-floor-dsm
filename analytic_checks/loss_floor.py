@@ -1,6 +1,6 @@
 """Is  loss floor = tr(Fisher metric)  a theorem or a coincidence?
 
-Chain to verify:
+Verify:
   (L1) pointwise   tr g(x,t) = (alpha^2/sigma^4) tr Cov[y | x_t = x]
   (L2) schedule    gamma_memoryless(t) * alpha_t^2/sigma_t^4 = d(SNR)/dt   for ANY affine interpolant
   (L3) I-MMSE      (1/2) int MMSE d(SNR) = Delta I(y ; x_t)
@@ -32,9 +32,10 @@ check_schedule("vp-like a=t^1.5,b=(1-t)^.5", lambda t:t**1.5, lambda t:np.sqrt(1
                lambda t:1.5*t**0.5, lambda t:-0.5/np.sqrt(1-t), ts)
 
 # ---------------- L1: metric trace == scaled posterior covariance -------------
-# 1-D two-point prior y = +-m ; x_t = a y + b z.  Everything closed form.
+# 1-D two-point prior y = +-m ; x_t = a y + b z.
 print("\nL1  tr g(x,t) == (alpha^2/sigma^4) tr Cov[y|x]   (pointwise, 1-D two-point prior)")
 m = 2.0
+
 for t in [0.2, 0.4, 0.6, 0.8]:
     a, b = t, 1-t
     xs = np.linspace(-3, 3, 7)
@@ -65,6 +66,7 @@ def mmse_and_I(snr, m=1.0, n=400000):
     p = 1/(1+np.exp(-2*np.sqrt(snr)*m*x))          # P(y=+m | x)
     Hpost = -np.mean(p*np.log(np.clip(p,1e-300,1))+(1-p)*np.log(np.clip(1-p,1e-300,1)))
     return mmse, np.log(2)-Hpost
+
 sn = np.linspace(1e-3, 6.0, 400)
 vals = [mmse_and_I(s) for s in sn]
 M = np.array([v[0] for v in vals]); I = np.array([v[1] for v in vals])
@@ -72,11 +74,15 @@ lhs = 0.5*np.trapezoid(M, sn)
 print(f"   (1/2) int MMSE dSNR = {lhs:.5f}")
 print(f"   I(snr_max) - I(snr_min) = {I[-1]-I[0]:.5f}")
 print(f"   relative error = {abs(lhs-(I[-1]-I[0]))/abs(I[-1]-I[0]):.3e}")
+
 import numpy as np
 rng=np.random.default_rng(0)
+
 print("L1 (redone): the identity is ALGEBRAIC, so check absolute agreement.")
 print("   claim:  g(x,t) = Var_{y|x}[ d_x log q(x|y) ] = (a^2/b^4) Var[y|x]")
+
 m=2.0
+
 for t in [0.2,0.4,0.6,0.8]:
     a,b=t,1-t
     xs=np.linspace(-3,3,13)
@@ -97,6 +103,7 @@ print("   The DSM gap integrand is E_{y|x}||d_x log q(x|y) - d_x log P||^2 -- th
 print("   No Gaussianity used.  Verify on a NON-Gaussian corruption kernel (Laplace):")
 # q(x|y) ∝ exp(-|x-y|/s) : score = sign(y-x)/s  (a.e.)
 s=0.7; ys=np.array([-1.5,1.5])
+
 for x in [-1.0,0.0,0.6]:
     lq=-np.abs(x-ys)/s; w=np.exp(lq-lq.max()); w/=w.sum()      # posterior p(y|x)
     sc=np.sign(ys-x)/s                                          # d_x log q(x|y)

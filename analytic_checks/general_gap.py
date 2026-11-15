@@ -1,6 +1,6 @@
 """GENERAL (non-affine) proof check of the gap identity.
 
-Claim chain, for ANY corruption diffusion dx = f(x,t)dt + sqrt(D(t)) dW and ANY data:
+For ANY corruption diffusion dx = f(x,t)dt + sqrt(D(t)) dW and ANY data:
 
  (A)  E_{P_t}[tr g]  =  E_y J(q_t(.|y))  -  J(P_t)          [pure algebra, any kernel]
  (B)  dI(y;x_t)/dt   = -(D/2) [ E_y J(q_t(.|y)) - J(P_t) ]  [de Bruijn for a diffusion]
@@ -44,6 +44,7 @@ qs = [q/(q.sum()*dx) for q in qs]
 
 dt, nsteps, every = 2e-5, 30000, 1500
 rec = []
+
 for n in range(nsteps+1):
     if n % every == 0:
         P = sum(w*q for w, q in zip(py, qs))
@@ -58,9 +59,11 @@ dIdt = np.gradient(I, t)
 pred = -0.5*D*gapint
 print("Nonlinear drift f(x) = -0.35 x^3, D = 0.6, three data atoms.\n")
 print(f"{'t':>8s} {'I(y;x_t)':>10s} {'dI/dt':>12s} {'-(D/2)*E[tr g]':>16s} {'rel.err':>9s}")
+
 for i in range(2, len(t)-2, 3):
     r = abs(dIdt[i]-pred[i])/max(abs(pred[i]),1e-12)
     print(f"{t[i]:8.4f} {I[i]:10.4f} {dIdt[i]:12.5f} {pred[i]:16.5f} {r:9.2e}")
+
 k = slice(2, len(t)-2)
 print(f"\n  median relative error over the interior: "
       f"{np.median(np.abs(dIdt[k]-pred[k])/np.abs(pred[k])):.3e}")

@@ -163,8 +163,8 @@ def test_b2(n=3, K=3):
     # The sqrt schedule is the one case where a UNIFORM t-grid is inadequate:
     # -m'/m = 1/(2(1-t)) has an integrable singularity at t = 1.  This is a
     # quadrature artefact, not a violation of the identity.  Resolving the
-    # endpoint -- either by clustering the grid there, or by the substitution
-    # u = m(t) that the schedule-independence argument itself uses -- recovers H.
+    # endpoint, either by clustering the grid there, or by the substitution
+    # u = m(t) that the schedule-independence argument itself uses, recovers H.
     print("   the sqrt schedule on a uniform grid: a quadrature artefact")
     mf, dmf = schedules["sqrt        m=sqrt(1-t)"]
     val_uni = t_integral(mf, dmf, uniform)

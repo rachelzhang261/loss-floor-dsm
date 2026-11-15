@@ -1,22 +1,24 @@
 """Regenerates fig_lossfloor_identity.pdf (paper Fig. 2, App. D.3).
-
-numpy + matplotlib only.
 """
 import numpy as np, matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 plt.rcParams.update({"font.size": 9, "axes.grid": True, "grid.alpha": 0.3,
                      "figure.dpi": 150, "savefig.bbox": "tight"})
+
 OUT = "./"
 
 # loss floor identity:  (1/2) int MMSE dlam  ==  Delta h(x_lam)
 mus = np.array([-1.5, 1.5]); ws = np.array([0.5, 0.5]); sy = 0.4
+
 def px(x, lam):
     m = np.sqrt(lam)*mus[None,:]; v = lam*sy**2+1.0
     return (ws[None,:]*np.exp(-0.5*(x[:,None]-m)**2/v)/np.sqrt(2*np.pi*v)).sum(1)
+
 def h_of(lam, L=60.0, n=120001):
     x = np.linspace(-L,L,n); p = px(x,lam)
     return -np.trapezoid(np.where(p>0, p*np.log(np.maximum(p,1e-300)), 0.0), x)
+
 def mmse_of(lam, L=60.0, n=120001):
     x = np.linspace(-L,L,n); m = np.sqrt(lam)*mus[None,:]; v = lam*sy**2+1.0
     comp = ws[None,:]*np.exp(-0.5*(x[:,None]-m)**2/v)/np.sqrt(2*np.pi*v)
@@ -43,4 +45,5 @@ ax[1].legend(frameon=False, fontsize=8)
 err = np.max(np.abs(cum-dh))/max(np.max(np.abs(dh)),1e-12)
 ax[1].text(0.05,0.85, f"max rel. dev. {err:.1e}", transform=ax[1].transAxes, fontsize=7)
 fig.savefig(OUT+"fig_lossfloor_identity.pdf"); plt.close(fig)
+
 print("fig_lossfloor_identity.pdf written, max relative deviation", err)

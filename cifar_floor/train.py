@@ -16,6 +16,7 @@ Smoke test (seconds, no CIFAR download needed):
 import argparse
 import json
 import os
+import tempfile
 import time
 
 import torch
@@ -23,21 +24,37 @@ import torch
 from common import (CONFIGS, TensorLoader, UNet, cifar_tensors, count_params,
                     dsm_loss_terms)
 
-CKPT_STEPS = [2000, 5000, 10000, 20000, 35000, 60000]
+CKPT_STEPS = [2000, 5000, 10000, 20000, 35000, 60000, 120000, 240000]
 
 
-def save(model, kwargs, step, cfg, out):
-    os.makedirs(out, exist_ok=True)
+def save(model, optimizer, kwargs, step, cfg, out, warmup_start):
     path = os.path.join(out, f"step{step:06d}.pt")
-    torch.save({"model": model.state_dict(), "model_kwargs": kwargs,
-                "step": step, "config": cfg}, path)
+    state = {
+        "model": model.state_dict(),
+        "optimizer": optimizer.state_dict(),
+        "model_kwargs": kwargs,
+        "step": step,
+        "config": cfg,
+        "warmup_start": warmup_start,
+    }
+    with tempfile.NamedTemporaryFile(dir=out, suffix=".tmp", delete=False) as file:
+        temporary_path = file.name
+    try:
+        torch.save(state, temporary_path)
+        os.replace(temporary_path, path)
+    finally:
+        if os.path.exists(temporary_path):
+            os.unlink(temporary_path)
     return path
 
 
 def main():
     p = argparse.ArgumentParser()
-    p.add_argument("--config", default="wide", choices=list(CONFIGS))
-    p.add_argument("--steps", type=int, default=60000)
+    p.add_argument("--config", choices=list(CONFIGS),
+                   help="training range (defaults to the checkpoint range or wide)")
+    p.add_argument("--steps", type=int, default=60000,
+                   help="total target step, including steps in the checkpoint")
+    p.add_argument("--resume", help="continue from a saved step*.pt checkpoint")
     p.add_argument("--batch", type=int, default=128)
     p.add_argument("--lr", type=float, default=2e-4)
     p.add_argument("--ch", type=int, default=64)
@@ -50,15 +67,34 @@ def main():
                    help="tiny end-to-end run on random data")
     args = p.parse_args()
 
+    if args.resume and args.smoke:
+        p.error("--resume and --smoke cannot be combined")
+
+    checkpoint = None
+    start_step = 0
+    if args.resume:
+        checkpoint = torch.load(args.resume, map_location="cpu", weights_only=True)
+        if args.config is not None and args.config != checkpoint["config"]:
+            p.error("--config must match the checkpoint's training range")
+        args.config = checkpoint["config"]
+        start_step = checkpoint["step"]
+    args.config = args.config or "wide"
+    if args.steps <= start_step:
+        p.error(f"--steps must exceed the starting step ({start_step})")
+
     torch.manual_seed(args.seed)
     dev = args.device if torch.cuda.is_available() else "cpu"
 
     kwargs = dict(ch=args.ch, ch_mult=(1, 2, 2), nres=2, attn_res=(16,),
                   dropout=0.1)
+    if checkpoint is not None:
+        kwargs = checkpoint["model_kwargs"]
     if args.smoke:
         kwargs = dict(ch=32, ch_mult=(1, 2), nres=1, attn_res=(16,), dropout=0.0)
 
     model = UNet(**kwargs).to(dev)
+    if checkpoint is not None:
+        model.load_state_dict(checkpoint["model"])
     print(f"device={dev}  params={count_params(model)/1e6:.2f}M  "
           f"config={args.config} {CONFIGS[args.config]}")
 
@@ -86,7 +122,17 @@ def main():
     lo, hi = CONFIGS[args.config]
 
     opt = torch.optim.Adam(model.parameters(), lr=args.lr)
-    ckpts = [s for s in CKPT_STEPS if s <= args.steps]
+    warmup_start = start_step
+    if checkpoint is not None:
+        if "optimizer" in checkpoint:
+            opt.load_state_dict(checkpoint["optimizer"])
+            warmup_start = checkpoint["warmup_start"]
+            print(f"Resuming at step {start_step} with saved Adam state", flush=True)
+        else:
+            print(f"Warm-starting at step {start_step} with fresh Adam state", flush=True)
+        del checkpoint
+
+    ckpts = [s for s in CKPT_STEPS if start_step < s <= args.steps]
     if args.steps not in ckpts:
         ckpts.append(args.steps)
 
@@ -97,9 +143,10 @@ def main():
 
     model.train()
     t0, running = time.time(), 0.0
-    for step in range(1, args.steps + 1):
+    since_log = 0
+    for step in range(start_step + 1, args.steps + 1):
         for gparam in opt.param_groups:
-            gparam["lr"] = args.lr * min(1.0, step / max(args.warmup, 1))
+            gparam["lr"] = args.lr * min(1.0, (step - warmup_start) / max(args.warmup, 1))
         y = next(loader)
         loss = dsm_loss_terms(model, y, lo, hi).mean()
         opt.zero_grad(set_to_none=True)
@@ -108,14 +155,18 @@ def main():
         opt.step()
 
         running += loss.item()
+        since_log += 1
         if step % 500 == 0:
             el = time.time() - t0
-            print(f"step {step:6d}/{args.steps}  loss {running/500:10.1f}  "
-                  f"{step/el:5.1f} it/s  eta {(args.steps-step)/(step/el)/60:5.1f} min",
+            rate = (step - start_step) / el
+            print(f"step {step:6d}/{args.steps}  loss {running/since_log:10.1f}  "
+                  f"{rate:5.1f} it/s  eta {(args.steps-step)/rate/60:5.1f} min",
                   flush=True)
             running = 0.0
+            since_log = 0
         if step in ckpts:
-            print("saved", save(model, kwargs, step, args.config, args.out))
+            path = save(model, opt, kwargs, step, args.config, args.out, warmup_start)
+            print("saved", path, flush=True)
 
 
 if __name__ == "__main__":

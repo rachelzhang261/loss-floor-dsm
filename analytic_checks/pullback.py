@@ -318,6 +318,7 @@ def main():
         print("   x      t      floor(direct)   tr(pullback)    rel.err "
               "  |E[dlnG]-dln psi|")
         worst = 0.0
+        
         for x, t in pts:
             lhs, rhs, E1, dlp = test_floor(x, t, S, A)
             rel = abs(lhs - rhs) / max(abs(rhs), 1e-30)
@@ -327,6 +328,7 @@ def main():
         print(f"   -> worst relative error on the floor identity: {worst:.2e}")
 
         print("\n  (T2) e-embedding curvature  ||Pi_perp d_i d_j A||_M")
+        
         for x, t in pts:
             c = embedding_curvature(x, t, S, A)
             print(f"  {x:5.2f} {t:5.2f}   xx={c['xx']:.3e}  "
@@ -337,6 +339,7 @@ def main():
         print("       ", np.array2string(sv, precision=3))
         n_eff = int((sv > 1e-6).sum())
         print(f"        affine hull dimension = {n_eff}  (latent dim = 2)")
+        
         if n_eff <= 2:
             print("        -> image lies in a 2-plane: immersion is e-AFFINE, "
                   "latent geometry FLAT")
@@ -351,6 +354,7 @@ def main():
         hdr = "   direction        " + "".join(
             f"  x={x:+.1f},t={t:.2f}" for x, t in pts)
         print(hdr)
+        
         for nm in PROBES:
             row = f"   {nm:<18}"
             for x, t in pts:
@@ -360,12 +364,14 @@ def main():
 
         print("\n  (T5a) is the time direction radial in theta?  "
               "|sin angle(A, d_t A)|")
+        
         for t, s in radial_structure(S, A):
             print(f"        t={t:.2f}   {s:.3e}")
 
         print("\n  (T5b) information vs radial metric along the ray")
         print("        r        K(r)=KL(p_r||nu)     dK/dr        r*g_rr"
               "     rel.err")
+        
         for r, K, dK, rg in radial_information(S, A):
             rel = abs(dK - rg) / max(abs(rg), 1e-30)
             print(f"     {r:8.3f} {K:15.6e} {dK:13.6e} {rg:13.6e} {rel:10.2e}")
